@@ -1,0 +1,25 @@
+docs
+internet manpage
+my own apps
+auto rebuild
+detailed guide
+cola all
+make it a template?
+pull selfv.description automatically?
+check formatting
+better descriptions
+unify stacks logic
+reorganize what is in a stack and what isn't.
+daemon user stuff could potentially be reusable.
+-> factor out big things like domain names
+host manpages as one of the apps?
+touch up app1-infrastruktur a little perhaps
+
+
+nix flake X alias
+option search
+another lang site
+qutebrowser redirect?
+ssh alias
+systemd alias
+VIM TRAINING
