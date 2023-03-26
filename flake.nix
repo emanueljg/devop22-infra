@@ -1,8 +1,10 @@
 {
   description = "An exercise in server setup";
 
-  inputs.https-server-proxy.url = "path:/home/ejg/https-server-proxy";
-  inputs.app1-infrastruktur.url = "path:/home/ejg/app1-infrastruktur";
+  inputs.app1-infrastruktur.url = "github:emanueljg/app1-infrastruktur";
+  inputs.https-server-proxy.url = "github:emanueljg/https-server-proxy";
+  inputs.nodehill-home-page.url = 
+    "github:emanueljg/nodehill-home-page/php-and-mongodb";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
 
   outputs = { self, nixpkgs, ... }@inputs: let
@@ -12,10 +14,11 @@
       module = { config, pkgs, lib, ... }: with lib; with builtins; let
 
         cfg = config.services.${name};
+        syspkgs = config.environment.systemPackages;
 
         mkCfg = attrset: mkIf cfg.enable attrset;
 
-        ALL_STACKS = [ 1 2 ];
+        ALL_STACKS = [ 1 2 3 ];
 
         mkStackEnables = stacks: map (x: cfg."stack${toString x}".enable) stacks;
         mkAllStackEnables = mkStackEnables ALL_STACKS; 
@@ -26,78 +29,59 @@
           stacks = lists.toList stackOrStacks;
         in mkIf (cfg.enable && (anyStackEnable stacks)) attrset;
         
-      in with types; rec {
+      in with types; {
         options.services.devop22 = {
 
-          enable = mkEnableOption self.description;
+          enable = mkEnableOption (mdDoc "devop22");
 
           nodePkg = mkOption {
             type = package;
             default = pkgs.nodejs-18_x;
-            description = ''
+            description = mdDoc ''
               Which node version to run the app with.
             '';
           };
 
           settingsPath = mkOption {
             type = str;
-            description = ''
+            description = mdDoc ''
               Path to the settings.json to run.
             '';
-            example = ''
-              `"/var/run/${name}-settings.json"`
+            example = literalMD ''
+              /var/run/${name}-settings.json"
             '';
           };
 
-          urls = mkOption {
-            description = ''
-              Url routing for all the web stacks.
+          served = mkOption {
+            description = mdDoc ''
+              A submodule mapping FQDNs to what they serve.
+
+              Allowed values are:
+                - main (main app to be run, depends on stack enabled)
+                - docs (served html docs of this project)
             '';
-            type = subdomain {
+            type = listOf (submodule {
               options = {
-                domain = mkOption {
+                FQDN = mkOption {
                   type = str;
-                  description = ''
-                    The base domain. Do not include subdomain here.
+                  description = mdDoc ''
+                    The fully-qualified domain name of the service.
                   '';
                 };
-
-                mainSubdomain = mkOption {
-                  type = str;
-                  default = builtins.head cfg.stack1.urls.subdomains;
-                  description = ''
-                    A subdomain defined in `subDomains` that
-                    should be defined as the main subdomain.
-
-                    Defaults to the first item in the
-                    `subdomains` list.
+                app = mkOption {
+                  type = enum [ "main" "docs" ];
+                  description = mdDoc ''
+                    What application to serve to the FQDN. 
                   '';
                 };
-
-                subdomains = mkOption {
-                  description = ''
-                    Subdomains to route.
+                port = mkOption {
+                  type = int;
+                  description = mdDoc ''
+                    What internal port to target.
                   '';
-                  type = listOf (submodule {
-                    options = {
-                      name = mkOption {
-                        type = str;
-                        description = ''
-                          Name of the subdomain.
-                        '';
-                      };
-                      port = mkoption {
-                        type = int;
-                        description = ''
-                          What localhost port to proxy to.
-                        '';
-                      };
-                    };
-                  });
                 };
-
               };
-            };
+            });
           };
 
           # UNIX USER STUFF
@@ -105,7 +89,7 @@
           user = mkOption {
             type = types.str;
             default = name;
-            description = lib.mdDoc ''
+            description = mdDoc ''
               User account under which devop22 infrastructure runs.
             '';
           };
@@ -113,7 +97,7 @@
           group = mkOption {
             type = types.str;
             default = name;
-            description = lib.mdDoc ''
+            description = mdDoc ''
               Group under which devop22 infrastructure runs.
             '';
           };
@@ -121,34 +105,109 @@
           # STACKS
 
           stack1 = mkOption {
+            description = mdDoc ''
+              Stack 1-related options.
+
+              DB: MySQL
+              app: node backend. https://github.com/emanueljg/app1-infrastruktur
+              process manager: pm2 as a systemd service
+              reverse proxy: node, https://github.com/emanueljg/https-server-proxy
+            '';
             type = submodule {
               options = {
-                enable = mkEnableOption "stack 1";
-                addSeeder = mkOption {
-                  description = ''
-                    Add the seeder as the systemd service ${name}-seeder.
-                    Does not make it automatically run; start it yourself.
-                  '';
-                  type = bool;
-                  default = true;
-                };
-
+                enable = mkEnableOption (mdDoc "stack 1");
               };
             };
           };
 
           stack2 = mkOption {
+            description = mdDoc ''
+              Stack 2-related options.
+
+              DB: MySQL
+              app: a wordpress website
+              reverse proxy: apache
+            '';
             type = submodule {
               options = {
-                enable = mkEnableOption "stack 2";
+                enable = mkEnableOption (mdDoc "stack 2");
+              };
+            };
+          };
+
+          stack3 = mkOption {
+            description = mdDoc ''
+              Stack 2-related options.
+
+              DB: MongoDB
+              app: a website, https://github.com/emanueljg/nodehill-home-page
+              fastcgi: phpfpm
+              reverse proxy + server: nginx
+            '';
+            type = submodule {
+              options = {
+                enable = mkEnableOption (mdDoc "stack 3");
               };
             };
           };
 
         };
 
-        config = mkIf cfg.enable {
+        config = let
 
+          getAnFQDN = FQDN: (
+            (lists.findSingle 
+              (served: served.app == FQDN)
+              null
+              "multiple"
+              cfg.served).FQDN
+          );
+
+          mainFQDN = getAnFQDN "main";
+          docsFQDN = getAnFQDN "docs";
+
+          stack1AppPkg = inputs.app1-infrastruktur.packages.${pkgs.system}.default.overrideAttrs (_: {
+            postInstall = ''
+                ln -sf "${cfg.settingsPath}" "$out/lib/node_modules/hej/settings.json"
+                cp -r dist $out/lib/node_modules/hej/
+              '';
+          });
+
+          stack1AppPkgPath = "${stack1AppPkg}/lib/node_modules/hej";
+
+          stack1ProxyPkg = let
+            proxies = (
+              strings.concatMapStringsSep
+                ", \n  "
+                (proxy: "'${proxy.FQDN}': ${toString proxy.port}")
+                cfg.served
+            );
+          in (inputs.https-server-proxy.packages.${pkgs.system}.default.overrideAttrs(_: {
+              postInstall = ''
+                cat > $out/lib/node_modules/https-server-proxy/myproxy.js <<'EOF'
+                const proxy = require('./index.js');
+
+                proxy.settings({ pathToCerts: '/var/lib/acme' });
+
+                proxy('${mainFQDN}', {
+                  ${proxies}
+                });
+                EOF
+              '';
+            })
+          );
+
+          stack1ProxyPkgPath = "${stack1ProxyPkg}/lib/node_modules/https-server-proxy";
+
+          nhpPkg = inputs.nodehill-home-page.packages.${pkgs.system}.default;
+
+        in mkIf cfg.enable {
+
+          # GLOBAL - NIXPKGS ALLOWUNFREE
+          # unfortunately the mongodb driver for php is unfree.
+          nixpkgs.config.allowUnfree = true;
+
+          # GLOBAL - UNIX USERS
           users = { 
             groups = mkIf (cfg.group == name) {
               ${name} = { };
@@ -162,20 +221,28 @@
             };
           };
 
+          # GLOBAL - FIREWALL
           networking.firewall.allowedTCPPorts = mkCfg [ 80 443 ];
 
-          # CERT
-
+          # GLOBAL - CERT
           security.acme = {
             acceptTerms = true;
             defaults.email = "emanueljohnsongodin@gmail.com";
+
+            # fixes perms issues later down the line
+            certs = mkStackCfg 1 {
+              ${mainFQDN} = {
+                webroot = "/var/lib/acme/acme-challenge";
+                group = mkIf (mainFQDN != null) cfg.group;
+              };
+              ${docsFQDN} = {
+                webroot = mkDefault "/var/lib/acme/acme-challenge";
+                group = mkIf (docsFQDN != null) cfg.group;
+              };
+            };
           };
 
-          security.acme.certs."1.boxedloki.xyz" = mkStackCfg 1 {
-            webroot = "/var/lib/acme/acme-challenge";
-            group = cfg.group;
-          };
-
+          # STACK 1, 2 - MYSQL DB
           services.mysql = mkMerge [
 
             (mkStackCfg [ 1 2 ] {
@@ -185,6 +252,7 @@
               package = mkForce pkgs.mysql80;
             })
 
+            # STACK 1 - ENSURE DB AND USER
             (mkStackCfg 1 {
               ensureDatabases = [ "cinema" ];
               ensureUsers = [{
@@ -197,51 +265,14 @@
 
           ];
 
+          # STACK 1, 3 - SYSTEMD SERVICES
           systemd.services = let
-            stack1app = inputs.app1-infrastruktur.packages.${pkgs.system}.default.overrideAttrs (_: {
-              postInstall = ''
-                  ln -sf "${cfg.settingsPath}" "$out/lib/node_modules/hej/settings.json"
-                  cp -r dist $out/lib/node_modules/hej/
-                '';
-            });
-            proxyPkg = (
-              inputs.https-server-proxy.packages.${pkgs.system}.default.overrideAttrs(_: {
-                postInstall = ''
-                  cat > $out/lib/node_modules/https-server-proxy/myproxy.js <<'EOF'
-                  const proxy = require('./index.js');
-
-                  proxy.settings({ pathToCerts: '/var/lib/acme' });
-
-                  proxy('1.boxedloki.xyz', {
-                    '1.boxedloki.xyz': 4000,
-                    '2.boxedloki.xyz': 34001,
-                    '3.boxedloki.xyz': 34002
-                  });
-                  EOF
-                '';
-              })
-            );
-            path = [ stack1app cfg.nodePkg pkgs.bash ];
-            WorkingDirectory = "${stack1app}/lib/node_modules/hej";
             User = cfg.user;
             Group = cfg.group;
-          in mkStackCfg 1 {
+          in mkStackCfg [ 1 3 ] {
 
-            "${name}-seeder" = mkIf cfg.stack1.addSeeder {
-              inherit path;
-              script = ''
-                npm_config_cache=$(mktemp -d) 
-                ${cfg.nodePkg}/bin/npm run seed-db --cache "$npm_config_cache";
-                rm -rf $npm_config_cache
-              '';
-              serviceConfig = {
-                Type = "oneshot";
-                inherit WorkingDirectory User Group;
-              };
-            };
-
-            "${name}" = let pm2 = pkgs.pm2; in {
-              path = path ++ [ pm2 proxyPkg ];
+            "app1-infrastruktur-www" = let pm2 = pkgs.pm2; in mkStackCfg 1 {
+              path = [ cfg.nodePkg pm2 stack1AppPkg stack1ProxyPkg ];
               wantedBy = [ "multi-user.target" ];
               script = ''
                 export PM2_HOME=$(mktemp -d)
@@ -252,14 +283,14 @@
                   "apps" : [{
                       "name": "app1-infrastruktur",
                       "script": "./index.js",
-                      "cwd": "${WorkingDirectory}/backend"
+                      "cwd": "${stack1AppPkgPath}/backend"
                     },
                     {
                       "name": "https-server-proxy",
                       "script": "./myproxy.js",
-                      "cwd": "${proxyPkg}/lib/node_modules/https-server-proxy",
+                      "cwd": "${stack1ProxyPkgPath}",
                       "env": {
-                        "NODE_PATH": "${proxyPkg}/lib/node_modules"
+                        "NODE_PATH": "${stack1ProxyPkg}/lib/node_modules"
                       }
                     }
                   ]
@@ -271,21 +302,92 @@
                 rm -rf $PM2_HOME
               '';
               serviceConfig = {
+                inherit User Group;
                 # hack to allow non-root systemd services to 
                 # listen to privileged ports (port <= 1024)
                 AmbientCapabilities="CAP_NET_BIND_SERVICE";
-                inherit User Group;
               };
+            };
+
+            # give nginx access to socket
+            "phpfpm-nodehill-home-page".serviceConfig = mkStackCfg 3 {
+              inherit User; 
+              Group = config.services.nginx.group;
             };
 
           };
 
-          # STACK 2 WORDPRESS SETUP
-          # sample pages:
-          # https://1.boxedloki.xyz/foo
-          # https://1.boxedloki.xyz/bar
+          # STACK 2 - DOCS
+          services.httpd = let
+            nixosManual = (
+              builtins.head (
+                builtins.filter 
+                  (pkg: pkg.name == "nixos-manual-html")
+                  syspkgs
+              )
+            );
+            # overriding doesn't seem to work here.
+            # probably due to some intricate manual-generation stuff going on.
+            # So by rolling our own derivation, we effectively copy over the old manual
+            # and add on a postInstall.
+            myNixosManual = pkgs.stdenv.mkDerivation {
+              name = nixosManual.name;
+              src = nixosManual;
+              buildInputs = [ pkgs.python310 pkgs.python3Packages.beautifulsoup4 ];
+              # this basically takes the normal online nixos manual (but existing locally),
+              # scrapes it with python using BeautifulSoup and deletes everything that 
+              # hasn't got to do with devop22,
+              # otherwise it would be quite the hefty manual.
+              # And yes, this is literally just nmd (gitlab.com/rycee/nmd) but in-place,
+              # but this ad-hoc solution seemed much simpler. Also, nmd at the time of writing this
+              # has 0 docs or blogs written about it. I've dug around esoteric library functions enough
+              # as-is.
+              postInstall = ''
+                # copy files over
+                cp -r . $out
+
+                # make script
+                cat > fixerscript.py <<'EOF'
+                from bs4 import BeautifulSoup
+
+                txt = None
+                with open('share/doc/nixos/options.html', 'r') as f:
+                  txt = f.read()
+
+                soup = BeautifulSoup(txt)
+                li = soup.find('dl', class_='variablelist')
+                for dt in li.find_all('dt'):
+                  if 'devop22' not in dt.find(lambda t: t.name == 'a' and t.has_attr('id'))['id']: 
+                    dt.decompose()
+                for dd in li.find_all('dd'):
+                  if dd.find('table'):
+                    dd.decompose()
+
+                print(soup.prettify())
+
+                EOF
+
+                # run script
+                python3 fixerscript.py > $out/share/doc/nixos/index.html
+              '';
+            };
+
+            nixosManualDir = "${myNixosManual}/share/doc/nixos";
+          in {
+            virtualHosts.${docsFQDN} = {
+              enableACME = true;
+              forceSSL = true;
+              servedDirs = [{
+                dir = nixosManualDir;
+                urlPath = "/";
+              }];
+            };
+          };
+
+          # STACK 2 - WORDPRESS
+          # sample pages currently: /foo, /bar
           services.wordpress = mkIf cfg.stack2.enable {
-            sites."1.boxedloki.xyz" = {
+            sites.${mainFQDN} = {
               virtualHost = {
                 http2 = true;
                 enableACME = true;
@@ -294,6 +396,89 @@
             };
           };
 
+          # STACK 3 - PHPFPM
+          services.phpfpm.pools."nodehill-home-page" = mkStackCfg 3 {
+            user = cfg.user;
+            group = cfg.group;
+            settings = {
+              "pm" = "dynamic";
+              "pm.max_children" = 75;
+              "pm.start_servers" = 10;
+              "pm.min_spare_servers" = 5;
+              "pm.max_spare_servers" = 20;
+              "pm.max_requests" = 500;
+            };
+            phpPackage = pkgs.php.buildEnv {
+              extensions = ({ enabled, all }: enabled ++ (with all; [
+                mongodb
+              ]));
+            };
+          };
+
+          # STACK 3 - NGINX
+          services.nginx = mkStackCfg 3 {
+            enable = true;
+            virtualHosts.${mainFQDN} = {
+              root = "${nhpPkg}/lib/node_modules/vite-project/dist";
+
+              # tweaks
+              enableACME = true;
+              forceSSL = true;
+              http2 = true;
+
+              # locations
+              locations = {
+                "/" = {
+                  index = "index.html";
+                  tryFiles = "$uri $uri/ =404";
+                };
+                "~ \\.php$" = {
+                  fastcgiParams = {
+                    "SCRIPT_FILENAME" = "$document_root$fastcgi_script_name";
+                  };
+                  extraConfig = let
+                    inherit (config.services.phpfpm.pools."nodehill-home-page") socket;
+                    inherit (config.services.nginx) package;
+                  in ''
+                    fastcgi_pass unix:${socket};
+                  '';
+                };
+              };
+            };
+          };
+
+          # STACK 3 - MONGODB
+          services.mongodb = mkStackCfg 3 {
+            enable = true;
+          };
+
+          # STACK 1, 3 - DB SEEDER SCRIPTS
+          environment.systemPackages = with pkgs; (
+            (lists.optional cfg.stack1.enable
+              (writeShellApplication {
+                name = "app1-infrastruktur-seed";
+                runtimeInputs = [ cfg.nodePkg ];
+                text = ''
+                  export NODE_PATH="${stack1AppPkg}/lib/node_modules"
+                  cd ${stack1AppPkgPath}
+                  npm_config_cache=$(mktemp -d) 
+                  npm run seed-db --cache "$npm_config_cache";
+                  rm -rf "$npm_config_cache"
+                '';
+              })
+            )
+            ++
+            (lists.optional cfg.stack3.enable 
+              (writeShellScriptBin 
+                "nodehill-home-page-seed" ''
+                  ${mongodb-tools}/bin/mongorestore \
+                    --drop ${nhpPkg}/lib/node_modules/vite-project/dump
+                ''
+              )
+            )
+          );
+
+          # GLOBAL - ASSERTIONS
           assertions = [
             { 
               assertion = (lists.count trivial.id mkAllStackEnables) <= 1;

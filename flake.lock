@@ -46,6 +46,21 @@
         "type": "github"
       }
     },
+    "flake-utils_3": {
+      "locked": {
+        "lastModified": 1678901627,
+        "narHash": "sha256-U02riOqrKKzwjsxc/400XnElV+UtPUQWpANPlyazjH0=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "93a2b84fc4b70d9e089d029deacc3583435c2ed6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "https-server-proxy": {
       "inputs": {
         "flake-utils": "flake-utils_2",
@@ -110,11 +125,44 @@
         "type": "github"
       }
     },
+    "nixpkgs_4": {
+      "locked": {
+        "lastModified": 1679710833,
+        "narHash": "sha256-9yKVvGX1oAnlc8vTVvN2lRH35q6ETudQbM1w9ragMRU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "83607dae4e05e1de755bbc7d7949b33fc1cfbbb9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-22.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nodehill-home-page": {
+      "inputs": {
+        "flake-utils": "flake-utils_3",
+        "nixpkgs": "nixpkgs_4"
+      },
+      "locked": {
+        "lastModified": 1679726979,
+        "narHash": "sha256-ZLCiOM9o0iypT6R4gZ0K5gxmWAod7oPIu+cLmEO0n0s=",
+        "path": "/home/ejg/nodehill-home-page",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/ejg/nodehill-home-page",
+        "type": "path"
+      }
+    },
     "root": {
       "inputs": {
         "app1-infrastruktur": "app1-infrastruktur",
         "https-server-proxy": "https-server-proxy",
-        "nixpkgs": "nixpkgs_3"
+        "nixpkgs": "nixpkgs_3",
+        "nodehill-home-page": "nodehill-home-page"
       }
     }
   },
