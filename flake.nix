@@ -1,10 +1,21 @@
 {
   description = "An exercise in server setup";
 
-  inputs.app1-infrastruktur.url = "github:emanueljg/app1-infrastruktur";
-  inputs.https-server-proxy.url = "github:emanueljg/https-server-proxy";
-  inputs.nodehill-home-page.url = 
-    "github:emanueljg/nodehill-home-page/php-and-mongodb";
+  inputs.app1-infrastruktur = {
+    url = "github:emanueljg/app1-infrastruktur";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  inputs.nodehill-home-page = {
+    url = "github:emanueljg/nodehill-home-page/php-and-mongodb";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+
+  inputs.https-server-proxy = {
+    url = "github:emanueljg/https-server-proxy";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-22.11";
 
   outputs = { self, nixpkgs, ... }@inputs: let
