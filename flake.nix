@@ -437,6 +437,10 @@
               forceSSL = true;
               http2 = true;
 
+              extraConfig = ''
+                error_page 404 =200 /index.html;
+              '';
+
               # locations
               locations = {
                 "/" = {
