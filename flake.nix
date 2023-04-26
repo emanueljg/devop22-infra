@@ -298,7 +298,7 @@
                 export PM2_HOME=$(mktemp -d)
                 export PROCESS_FILE=$(mktemp /tmp/XXXXXXX.json)
                 export ROOT_DIR=$(mktemp -d)
-                export NODE_MODULES=$(mktemp -d)
+                export NODE_PATH=$(mktemp -d)
                 
                 git clone https://github.com/emanueljg/demo-deploy-action $ROOT_DIR
                 cd $ROOT_DIR
@@ -313,7 +313,7 @@
                       "script": "./server.js",
                       "cwd": "$ROOT_DIR",
                       "env": {
-                        "NODE_PATH": "$NODE_MODULES"
+                        "NODE_PATH": "$NODE_PATH"
                       }
                     }
                   ]
