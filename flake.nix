@@ -457,8 +457,8 @@
               enableACME = true;
               forceSSL = true;
               locations."/" = {
-                proxyPass = "http://localhost:3000"
-              }
+                proxyPass = "http://localhost:3000";
+              };
             };
 
             virtualHosts.${mainFQDN} = mkStackCfg 3 {

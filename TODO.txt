@@ -1,23 +1,20 @@
-docs
-internet manpage
-my own apps
+must do:
 auto rebuild
-detailed guide
+make github links real
+
+bonus:
 cola all
-make it a template?
-pull selfv.description automatically?
+detailed guide
 check formatting
-better descriptions
 unify stacks logic
 reorganize what is in a stack and what isn't.
+touch up app1-infrastruktur a little
+
+not in this proj:
 daemon user stuff could potentially be reusable.
--> factor out big things like domain names
-host manpages as one of the apps?
-touch up app1-infrastruktur a little perhaps
-
-
 nix flake X alias
 option search
+make it a template?
 another lang site
 qutebrowser redirect?
 ssh alias
