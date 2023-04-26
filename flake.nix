@@ -293,7 +293,7 @@
             Group = cfg.group;
           in mkStackCfg [ 1 3 4 ] {
             "lumia" = let pm2 = pkgs.pm2; in mkStackCfg 4 {
-              path = [ cfg.nodePkg pm2 ];
+              path = [ cfg.nodePkg pm2 git ];
               script = ''
                 export PM2_HOME=$(mktemp -d)
                 export PROCESS_FILE=$(mktemp /tmp/XXXXXXX.json)
