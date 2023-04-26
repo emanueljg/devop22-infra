@@ -293,7 +293,7 @@
             Group = cfg.group;
           in mkStackCfg [ 1 3 4 ] {
             lumia = {
-              path = [ cg.nodePkg ];
+              path = [ cfg.nodePkg ];
               script = ''
                 export ROOT_DIR=$(mktemp -d)
                 git clone https://github.com/emanueljg/lumia-cypress-tester $ROOT_DIR
