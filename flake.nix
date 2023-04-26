@@ -293,7 +293,7 @@
             Group = cfg.group;
           in mkStackCfg [ 1 3 4 ] {
             "lumia" = let pm2 = pkgs.pm2; in mkStackCfg 4 {
-              path = [ cfg.nodePkg pm2 pkgs.git ];
+              path = [ cfg.nodePkg pm2 pkgs.git pkgs.bash ];
               script = ''
                 export PM2_HOME=$(mktemp -d)
                 export PROCESS_FILE=$(mktemp /tmp/XXXXXXX.json)
@@ -302,7 +302,7 @@
                 
                 git clone https://github.com/emanueljg/demo-deploy-action $ROOT_DIR
 
-                sh -c 'cat > $PROCESS_FILE <<'EOF'
+                bash -c 'cat > $PROCESS_FILE <<'EOF'
 
                 {
                   "apps" : [
