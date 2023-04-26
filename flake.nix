@@ -292,15 +292,37 @@
             User = cfg.user;
             Group = cfg.group;
           in mkStackCfg [ 1 3 4 ] {
-            lumia = {
-              path = [ cfg.nodePkg pkgs.git ];
+            "lumia" = let pm2 = pkgs.pm2; in mkStackCfg 4 {
+              path = [ cfg.nodePkg pm2 ];
               script = ''
+                export PM2_HOME=$(mktemp -d)
+                export PROCESS_FILE=$(mktemp /tmp/XXXXXXX.json)
                 export ROOT_DIR=$(mktemp -d)
-                git clone https://github.com/emanueljg/lumia-cypress-tester $ROOT_DIR
-                cd $ROOT_DIR
-                npm install
-                npm start
-              '';                
+                export NODE_MODULES=$(mktemp -d)
+                
+                git clone https://github.com/emanueljg/demo-deploy-action $ROOT_DIR
+
+                cat > $PROCESS_FILE <<'EOF'
+                {
+                  "apps" : [
+                    {
+                      "name": "lumia",
+                      "script": "./server.js",
+                      "cwd": "$ROOT_DIR",
+                      "env": {
+                        "NODE_PATH": "$NODE_MODULES"
+                      }
+                    }
+                  ]
+                }
+                EOF
+
+                ${pm2}/bin/pm2 start $PROCESS_FILE --no-daemon
+                rm $PROCESS_FILE
+                rm -rf $PM2_HOME
+                rm -rf $ROOT_DIR
+                rm -rf $NODE_MODULES
+              '';
               serviceConfig = {
                 inherit User Group;
               };
