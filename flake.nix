@@ -295,12 +295,9 @@
             "lumia" = let pm2 = pkgs.pm2; in mkStackCfg 4 {
               path = [ cfg.nodePkg pm2 pkgs.git pkgs.bash ];
               script = ''
-                rm -rf demo-deploy-action
-                pwd
+                rm -rf $HOME/demo-deploy-action
                 git clone https://github.com/emanueljg/demo-deploy-action $HOME/demo-deploy-action
-                pwd
                 cd $HOME/demo-deploy-action
-                pwd
                 npm install --loglevel verbose --no-audit
                 npm start
               '';
