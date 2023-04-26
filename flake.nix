@@ -302,7 +302,8 @@
                 
                 git clone https://github.com/emanueljg/demo-deploy-action $ROOT_DIR
 
-                cat > $PROCESS_FILE <<'EOF'
+                ${pkgs}/bin/sh -c 'cat > $PROCESS_FILE <<'EOF'
+
                 {
                   "apps" : [
                     {
@@ -315,7 +316,7 @@
                     }
                   ]
                 }
-                EOF
+                EOF'
 
                 ${pm2}/bin/pm2 start $PROCESS_FILE --no-daemon
                 rm $PROCESS_FILE
