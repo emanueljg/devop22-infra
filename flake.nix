@@ -296,8 +296,11 @@
               path = [ cfg.nodePkg pm2 pkgs.git pkgs.bash ];
               script = ''
                 rm -rf demo-deploy-action
+                pwd
                 git clone https://github.com/emanueljg/demo-deploy-action $HOME/demo-deploy-action
+                pwd
                 cd $HOME/demo-deploy-action
+                pwd
                 npm install --loglevel verbose --no-audit
                 npm start
               '';
