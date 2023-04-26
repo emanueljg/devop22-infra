@@ -302,8 +302,8 @@
                 npm start
               '';
               serviceConfig = {
-                User = 'ejg';
-                Group = 'users';
+                User = "ejg";
+                Group = "users";
               };
             };
 
