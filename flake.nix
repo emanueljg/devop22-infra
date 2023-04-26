@@ -295,39 +295,15 @@
             "lumia" = let pm2 = pkgs.pm2; in mkStackCfg 4 {
               path = [ cfg.nodePkg pm2 pkgs.git pkgs.bash ];
               script = ''
-                export PM2_HOME=$(mktemp -d)
-                export PROCESS_FILE=$(mktemp /tmp/XXXXXXX.json)
-                export ROOT_DIR=$(mktemp -d)
-                export NODE_PATH=$(mktemp -d)
-                
-                git clone https://github.com/emanueljg/demo-deploy-action $ROOT_DIR
-                cd $ROOT_DIR
+                rm -rf demo-deploy-action
+                git clone https://github.com/emanueljg/demo-deploy-action
+                cd demo-deploy-action
                 npm install --loglevel verbose --no-audit
-
-                bash -c 'cat > $PROCESS_FILE <<'EOF'
-
-                {
-                  "apps" : [
-                    {
-                      "name": "lumia",
-                      "script": "./server.js",
-                      "cwd": "$ROOT_DIR",
-                      "env": {
-                        "NODE_PATH": "$NODE_PATH"
-                      }
-                    }
-                  ]
-                }
-                EOF'
-
-                ${pm2}/bin/pm2 start $PROCESS_FILE --no-daemon
-                rm $PROCESS_FILE
-                rm -rf $PM2_HOME
-                rm -rf $ROOT_DIR
-                rm -rf $NODE_MODULES
+                npm start
               '';
               serviceConfig = {
-                inherit User Group;
+                User = 'ejg';
+                Group = 'users';
               };
             };
 
