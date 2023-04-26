@@ -301,6 +301,8 @@
                 export NODE_MODULES=$(mktemp -d)
                 
                 git clone https://github.com/emanueljg/demo-deploy-action $ROOT_DIR
+                cd $ROOT_DIR
+                npm install
 
                 bash -c 'cat > $PROCESS_FILE <<'EOF'
 
