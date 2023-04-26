@@ -29,7 +29,7 @@
 
         mkCfg = attrset: mkIf cfg.enable attrset;
 
-        ALL_STACKS = [ 1 2 3 ];
+        ALL_STACKS = [ 1 2 3 4 ];
 
         mkStackEnables = stacks: map (x: cfg."stack${toString x}".enable) stacks;
         mkAllStackEnables = mkStackEnables ALL_STACKS; 
@@ -162,6 +162,17 @@
             };
           };
 
+          stack4 = mkOption {
+            description = mdDoc ''
+              Stack 4, for test course.
+            '';
+            type = submodule {
+              options = {
+                enable = mkEnableOption (mdDoc "stack 4");
+              };
+            };
+          };
+
         };
 
         config = let
@@ -276,11 +287,24 @@
 
           ];
 
-          # STACK 1, 3 - SYSTEMD SERVICES
+          # STACK 1, 3, 4 - SYSTEMD SERVICES
           systemd.services = let
             User = cfg.user;
             Group = cfg.group;
-          in mkStackCfg [ 1 3 ] {
+          in mkStackCfg [ 1 3 4 ] {
+            lumia = {
+              path = [ cg.nodePkg ];
+              script = ''
+                export ROOT_DIR=$(mktemp -d)
+                git clone https://github.com/emanueljg/lumia-cypress-tester $ROOT_DIR
+                cd $ROOT_DIR
+                npm install
+                npm start
+              '';                
+              serviceConfig = {
+                inherit User Group;
+              };
+            };
 
             "app1-infrastruktur-www" = let pm2 = pkgs.pm2; in mkStackCfg 1 {
               path = [ cfg.nodePkg pm2 stack1AppPkg stack1ProxyPkg ];
@@ -427,9 +451,17 @@
           };
 
           # STACK 3 - NGINX
-          services.nginx = mkStackCfg 3 {
+          services.nginx = mkStackCfg [ 3 4 ] {
             enable = true;
-            virtualHosts.${mainFQDN} = {
+            virtualHosts."4.boxedloki.xyz" = {
+              enableACME = true;
+              forceSSL = true;
+              locations."/" = {
+                proxyPass = "http://localhost:3000"
+              }
+            };
+
+            virtualHosts.${mainFQDN} = mkStackCfg 3 {
               root = "${nhpPkg}/lib/node_modules/vite-project/dist";
 
               # tweaks
