@@ -302,7 +302,7 @@
                 
                 git clone https://github.com/emanueljg/demo-deploy-action $ROOT_DIR
 
-                ${pkgs.sh}/bin/sh -c 'cat > $PROCESS_FILE <<'EOF'
+                sh -c 'cat > $PROCESS_FILE <<'EOF'
 
                 {
                   "apps" : [
